@@ -1,3 +1,5 @@
+version: "1"
+
 services:
   # ---------------------------------------------------------------------------
   # EduRAG Backend API Service (FastAPI / Python)
