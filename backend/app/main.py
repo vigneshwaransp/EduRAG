@@ -80,6 +80,16 @@ app.include_router(flashcards_router, prefix=api_prefix)
 app.include_router(analytics_router, prefix=api_prefix)
 app.include_router(eval_router, prefix=api_prefix)
 
+@app.get("/", tags=["Health"])
+async def root_health():
+    return {
+        "status": "healthy",
+        "service": "EduRAG — Education Document Intelligence API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/api/health"
+    }
+
 # Mount uploads directory if it exists
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
