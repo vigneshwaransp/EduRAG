@@ -8,8 +8,8 @@
   ],
   "scripts": {
     "dev": "npm --prefix frontend run dev",
-    "build": "cd frontend && npm install && npm run build",
-    "vercel-build": "cd frontend && npm install && npm run build",
+    "build": "cd frontend && npm install --include=optional && npm run build",
+    "vercel-build": "cd frontend && npm install --include=optional && npm run build",
     "preview": "npm --prefix frontend run preview"
   }
 }
