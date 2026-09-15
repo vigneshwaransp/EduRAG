@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #FFFFFF;
+    --text-primary: #000000;
+    --border-color: #000000;
+  }
+
+  .dark {
+    --bg-primary: #000000;
+    --text-primary: #FFFFFF;
+    --border-color: #333333;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: -0.01em;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+
+  code, kbd, pre, .font-mono {
+    font-family: "JetBrains Mono", monospace;
+  }
+}
+
+/* Sharp rectangular scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #555555;
+  border-radius: 0px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #000000;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #FFFFFF;
+}
+
+/* Minimalist Monochrome Utilities */
+.border-sharp {
+  border: 1px solid #000000;
+}
+.dark .border-sharp {
+  border: 1px solid #333333;
+}
+
+.border-sharp-thick {
+  border: 2px solid #000000;
+}
+.dark .border-sharp-thick {
+  border: 2px solid #FFFFFF;
+}
+
+/* High-contrast hover inversion */
+.btn-invert {
+  background-color: #000000;
+  color: #FFFFFF;
+  border: 1px solid #000000;
+  transition: all 0.1s ease;
+}
+.btn-invert:hover {
+  background-color: #FFFFFF;
+  color: #000000;
+}
+
+.dark .btn-invert {
+  background-color: #FFFFFF;
+  color: #000000;
+  border: 1px solid #FFFFFF;
+}
+.dark .btn-invert:hover {
+  background-color: #000000;
+  color: #FFFFFF;
+}
+
+.btn-invert-outline {
+  background-color: transparent;
+  color: #000000;
+  border: 1px solid #000000;
+  transition: all 0.1s ease;
+}
+.btn-invert-outline:hover {
+  background-color: #000000;
+  color: #FFFFFF;
+}
+
+.dark .btn-invert-outline {
+  color: #FFFFFF;
+  border: 1px solid #444444;
+}
+.dark .btn-invert-outline:hover {
+  background-color: #FFFFFF;
+  color: #000000;
+  border-color: #FFFFFF;
+}
+
+/* Minimalist academic ruled grid pattern */
+.bg-grid-monochrome {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+}
+
+.dark .bg-grid-monochrome {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
+/* Ruled notebook line background */
+.bg-ruled-lines {
+  background-size: 100% 28px;
+  background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+}
+
+.dark .bg-ruled-lines {
+  background-size: 100% 28px;
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
+/* Flashcard 3D flip card styles */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}

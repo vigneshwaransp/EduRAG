@@ -1,666 +1,234 @@
-# 🎓 EduRAG — Education Document RAG System
+# EduRAG — Education Document Intelligence System
 
-> **Turn your study material into an AI-powered learning assistant.**
+> **Turn Your Study Material Into an AI Tutor.**
+> A production-grade Retrieval-Augmented Generation (RAG) platform empowering students and educators to query academic documents, receive strictly grounded answers with verifiable page-level citations, generate interactive quizzes and spaced-repetition flashcards, and diagnose conceptual weaknesses.
 
-EduRAG is an **AI-powered Retrieval-Augmented Generation (RAG) system** designed specifically for educational documents.
-
-Upload your **textbooks, lecture notes, PDFs, study materials, research papers, or academic documents**, ask questions in natural language, and receive answers grounded in the information contained within your documents.
-
-Instead of relying only on an LLM's pretrained knowledge, EduRAG retrieves the most relevant sections from your uploaded documents and provides them as context to the AI before generating a response.
-
----
-
-## ✨ Why EduRAG?
-
-Students often spend significant time searching through lengthy PDFs and study materials to find specific information.
-
-Traditional keyword search can fail when the question is phrased differently from the document.
-
-EduRAG solves this using **semantic search + Retrieval-Augmented Generation**.
-
-### Traditional Approach
-
-```text
-Student
-   ↓
-Search PDF
-   ↓
-Find Keywords
-   ↓
-Read Multiple Pages
-   ↓
-Find Answer
-```
-
-### EduRAG Approach
-
-```text
-Student Question
-       ↓
-Query Embedding
-       ↓
-Semantic Search
-       ↓
-Relevant Document Chunks
-       ↓
-Context
-       ↓
-LLM
-       ↓
-Grounded Answer + Sources
-```
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)](https://reactjs.org)
+[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?logo=vite&logoColor=white)](https://vitejs.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
+[![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector_Store-FF6F00)](https://www.trychroma.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
 
-# 🚀 Features
+## Architecture Overview
 
-### 📄 Document Intelligence
+```mermaid
+graph TD
+    User([Student / Researcher]) <--> Frontend[React 18 + Vite + Tailwind + Framer Motion]
+    Frontend <--> |REST & SSE Token Streaming| Backend[FastAPI Async Gateway]
 
-* Upload educational documents
-* Extract text automatically
-* Process large documents
-* Split content into meaningful chunks
-* Preserve document and page metadata
+    subgraph Backend Microservices
+        AuthService[JWT Authentication & User Isolation]
+        DocService[Document Ingestion & PyMuPDF Engine]
+        ChunkService[Semantic Recursive Chunker with Page Bounds]
+        EmbedService[Dense Embedding Service: 384-d MiniLM]
+        VectorStore[ChromaDB / Cosine Vector Store]
+        Retriever[Top-K Similarity Search & Reranking]
+        CitationEngine[Citation Mapper & Verifier]
+        LLMOrchestrator[Multi-Provider LLM & Grounding Engine]
+        QuizEngine[Grounded Assessment Generator]
+        FlashcardEngine[Spaced Repetition Flashcard Service]
+        SummaryEngine[Exam Revision & Concept Synthesizer]
+        EvalHarness[RAG Evaluation Benchmark Harness]
+    end
 
-### 🧠 AI-Powered RAG
+    Backend --> AuthService
+    Backend --> DocService
+    Backend --> LLMOrchestrator
+    Backend --> QuizEngine
+    Backend --> FlashcardEngine
+    Backend --> SummaryEngine
+    Backend --> EvalHarness
 
-* Semantic document retrieval
-* Vector embeddings
-* Similarity search
-* Context-aware generation
-* Configurable Top-K retrieval
-* Optional reranking
+    DocService --> ChunkService
+    ChunkService --> EmbedService
+    EmbedService --> VectorStore
+    Retriever <--> VectorStore
+    LLMOrchestrator --> Retriever
+    LLMOrchestrator --> CitationEngine
+    CitationEngine -.-> |Page Anchors| Frontend
 
-### 💬 AI Tutor
-
-Ask questions naturally about your study material.
-
-Example:
-
-> "Explain deadlock prevention with an example."
-
-EduRAG retrieves the relevant content from your documents and generates an answer based on that context.
-
-### 🔎 Semantic Search
-
-Search documents by **meaning**, not just exact keywords.
-
-### 📚 Source Citations
-
-Responses can include:
-
-```text
-📄 Operating_Systems.pdf
-Page 42
-```
-
-This makes it easier to verify where the answer came from.
-
-### 📝 Smart Summaries
-
-Generate:
-
-* Chapter summaries
-* Quick revision notes
-* Important concepts
-* Key definitions
-* Exam-focused summaries
-
-### 🧪 Quiz Generator
-
-Generate quizzes directly from study materials.
-
-Supported formats:
-
-* Multiple Choice Questions
-* True / False
-* Short Answer
-* Fill in the Blanks
-
-### 🃏 Flashcards
-
-Convert educational content into interactive flashcards for revision.
-
-### 📊 Study Analytics
-
-Track:
-
-* Questions asked
-* Documents studied
-* Quiz performance
-* Frequently studied topics
-* Learning activity
-
----
-
-# 🏗️ System Architecture
-
-```text
-                       ┌──────────────────┐
-                       │      Student     │
-                       └────────┬─────────┘
-                                │
-                    ┌───────────▼───────────┐
-                    │      React Frontend   │
-                    └───────────┬───────────┘
-                                │
-                    ┌───────────▼───────────┐
-                    │      FastAPI Backend  │
-                    └───────┬─────────┬─────┘
-                            │         │
-              Upload        │         │ Question
-                            │         │
-                ┌───────────▼───┐   ┌─▼──────────────┐
-                │    Document   │   │ Query Embedding│
-                │   Processing  │   └───────┬────────┘
-                └───────┬───────┘           │
-                        │                    │
-                        ▼                    ▼
-                 Text Extraction      Semantic Search
-                        │                    │
-                        ▼                    │
-                    Chunking                 │
-                        │                    │
-                        ▼                    │
-                   Embeddings                │
-                        │                    │
-                        └────────┬───────────┘
-                                 ▼
-                         ┌───────────────┐
-                         │ Vector Store  │
-                         └───────┬───────┘
-                                 │
-                                 ▼
-                         Relevant Context
-                                 │
-                                 ▼
-                           ┌──────────┐
-                           │   LLM    │
-                           └────┬─────┘
-                                │
-                                ▼
-                      Answer + Citations
-                                │
-                                ▼
-                           Student
+    Backend <--> DB[(PostgreSQL 16 / Async SQLite)]
 ```
 
 ---
 
-# 🔄 RAG Pipeline
+## Core Features
 
-EduRAG follows a complete Retrieval-Augmented Generation pipeline.
+### 1. Strict Source Grounding & Verifiable Citations
+- **Anti-Hallucination Prompt Architecture**: The system explicitly refuses to guess when context is insufficient:
+  > *"I couldn't find sufficient information in your uploaded documents to answer this confidently."*
+- **Page-Level Citations**: Every factual claim generated links directly to `[Document Name — Page X]`.
+- **Source Inspector Drawer**: Click any citation pill to open the side inspector and view the exact retrieved passage and confidence score.
 
-```text
-Document Upload
-      ↓
-Text Extraction
-      ↓
-Text Cleaning
-      ↓
-Semantic Chunking
-      ↓
-Embedding Generation
-      ↓
-Vector Database
-      ↓
-User Query
-      ↓
-Query Embedding
-      ↓
-Similarity Search
-      ↓
-Top-K Relevant Chunks
-      ↓
-Context Construction
-      ↓
-LLM
-      ↓
-Grounded Response
-      ↓
-Source Citations
-```
+### 2. Multi-Document RAG & Scope Filtering
+- Choose between querying **All Documents**, a **single textbook**, or a **custom subset of modules** (e.g. comparing *Operating Systems* process scheduling with *Computer Networks* packet routing).
 
----
+### 3. In-App Document Reader
+- Built-in paginated document viewer with page navigation, zoom controls, in-page search, and automated citation jumps with visual bounding alerts.
 
-# 🛠️ Tech Stack
+### 4. Grounded Assessment Generator (Quizzes)
+- Generates 5, 10, or 20 question quizzes based strictly on uploaded chapters.
+- Customizable difficulty (`Easy`, `Medium`, `Hard`) and question types (MCQ, True/False, Short Answer).
+- Instant scoring, question-by-question explanations citing source page numbers, and diagnostic weak-topic tracking.
 
-| Layer               | Technology                 |
-| ------------------- | -------------------------- |
-| Frontend            | React + Vite               |
-| Language            | TypeScript                 |
-| Styling             | Tailwind CSS               |
-| Animations          | Framer Motion              |
-| Backend             | Python + FastAPI           |
-| Database            | PostgreSQL                 |
-| Vector Database     | ChromaDB                   |
-| Embeddings          | Sentence Transformers      |
-| Document Processing | PyMuPDF                    |
-| AI                  | LLM API / Configurable LLM |
-| Authentication      | JWT                        |
-| ORM                 | SQLAlchemy                 |
-| Deployment          | Docker                     |
-| Version Control     | Git + GitHub               |
+### 5. 3D Spaced-Repetition Flashcards
+- Interactive flip cards with 3D perspective animations.
+- Spaced-repetition review ratings: `Again`, `Hard`, `Good`, `Mastered`.
+- Real-time deck retention mastery analytics.
+
+### 6. High-Yield Exam Revision Summaries
+- Modes: `Exam Revision` (Important Concepts, Key Definitions, Formulas, Exam Pitfalls), `Quick Summary`, `Detailed Summary`, `Bullet Points`, and `Key Concepts Glossary`.
+
+### 7. Global Semantic Spotlight (`Ctrl+K`)
+- Instant vector-indexed spotlight search across all document chunks.
+
+### 8. RAG Evaluation Benchmark Suite
+- Live automated benchmark measuring:
+  - **Precision @ K**
+  - **Recall @ K**
+  - **Context Relevance Score**
+  - **Answer Faithfulness (Grounding)**
+  - **Citation Integrity**
+  - **Mean End-to-End Latency**
 
 ---
 
-# 📂 Project Structure
+## Technology Stack
 
-```text
-EduRAG/
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── layouts/
-│   │   ├── hooks/
-│   │   ├── services/
-│   │   └── types/
-│   └── package.json
-│
-├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   ├── models/
-│   │   ├── schemas/
-│   │   ├── services/
-│   │   ├── rag/
-│   │   ├── database/
-│   │   └── main.py
-│   │
-│   ├── requirements.txt
-│   └── .env.example
-│
-├── uploads/
-├── vectorstore/
-├── docker-compose.yml
-├── .gitignore
-└── README.md
-```
+| Layer | Technology |
+|---|---|
+| **Frontend** | React 18, Vite, TypeScript, Tailwind CSS, Framer Motion, Lucide React, Recharts |
+| **Backend** | Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2.0 (Async), Uvicorn |
+| **Database** | PostgreSQL 16 (production) with zero-config Async SQLite fallback (`aiosqlite`) |
+| **Vector Store** | ChromaDB persistent collection with high-speed NumPy cosine vector fallback |
+| **Document Processing** | PyMuPDF (`fitz`), `python-docx`, plain text / markdown |
+| **Embeddings** | SentenceTransformers `all-MiniLM-L6-v2` / 384-dimensional dense semantic projector |
+| **Security** | JWT authentication (HS256), Passlib / Bcrypt password hashing, CORS protection |
+| **Deployment** | Docker, Docker Compose, Nginx |
 
 ---
 
-# ⚙️ Installation
+## Getting Started
 
-## 1. Clone the repository
+### Prerequisites
+- Python 3.10+
+- Node.js 18+ and npm
+- (Optional) Docker and Docker Compose
+
+### 1. Clone & Environment Configuration
 
 ```bash
-git clone https://github.com/your-username/EduRAG.git
-cd EduRAG
+git clone https://github.com/your-username/edurag.git
+cd edurag
 ```
 
----
-
-## 2. Backend Setup
-
-Create a virtual environment:
-
+Copy the example environment configuration:
 ```bash
-python -m venv venv
+cp backend/.env.example backend/.env
 ```
 
-### Windows
-
-```bash
-venv\Scripts\activate
-```
-
-### Linux / macOS
-
-```bash
-source venv/bin/activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r backend/requirements.txt
-```
-
----
-
-# 🔐 Environment Variables
-
-Create:
-
-```text
-backend/.env
-```
-
-Example:
-
+The configuration is ready out-of-the-box. If you have an external LLM API key, configure it in `backend/.env`:
 ```env
-DATABASE_URL=postgresql://username:password@localhost:5432/edurag
-
-JWT_SECRET=your_secret_key
-
-LLM_API_KEY=your_api_key
-
-EMBEDDING_MODEL=sentence-transformers-model
-
-VECTOR_DB_URL=http://localhost:8000
-
-CORS_ORIGINS=http://localhost:5173
+LLM_PROVIDER=auto
+LLM_API_KEY=your_api_key_here
 ```
-
-Never commit `.env` files or API keys to GitHub.
+*(EduRAG features an intelligent built-in Academic Grounded Synthesis Engine that answers questions, generates quizzes, and creates flashcards even if no external key is set!)*
 
 ---
 
-# ▶️ Run Backend
+### 2. Running Backend (FastAPI)
 
 ```bash
-uvicorn backend.app.main:app --reload
+cd backend
+python -m pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 ```
-
-Backend will be available at:
-
-```text
-http://localhost:8000
-```
-
-API documentation:
-
-```text
-http://localhost:8000/docs
-```
+- API will start at: `http://localhost:8000`
+- Interactive Swagger OpenAPI documentation: `http://localhost:8000/docs`
 
 ---
 
-# 💻 Run Frontend
+### 3. Running Frontend (React + Vite)
 
-Open another terminal:
-
+In a separate terminal:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-
-Frontend:
-
-```text
-http://localhost:5173
-```
+- Open your browser at: `http://localhost:5173`
 
 ---
 
-# 🐳 Docker
+### 4. Running with Docker Compose
 
-Run the complete stack using:
+To launch the full production stack (Frontend + Backend + PostgreSQL + ChromaDB) with a single command:
 
 ```bash
-docker compose up --build
+docker-compose up --build
 ```
+- Web Application: `http://localhost:3000`
+- Backend API: `http://localhost:8000`
 
-Stop:
+---
+
+## Demo Mode & Pre-Loaded Textbooks
+
+EduRAG includes 4 comprehensive academic textbooks out-of-the-box:
+1. **Operating Systems**: Concurrency, Process Synchronization, Deadlocks (Coffman conditions), Banker's Algorithm, Virtual Memory, and Paging.
+2. **Artificial Intelligence**: Neural Networks, Activation Functions, Backpropagation, Gradient Descent (SGD, Adam), Loss Functions, and Transformers (Attention).
+3. **Data Structures & Algorithms**: Big-O Asymptotic Complexity, Balanced AVL Trees, Rotations, and Graph Traversals (BFS/DFS).
+4. **Computer Networks**: OSI 7-Layer Architecture, TCP 3-way handshake, Flow Control, and DNS Resolution.
+
+Click **"Explore Demo"** or **"Sample Textbooks"** in the top navigation bar to index and explore immediately!
+
+---
+
+## API Documentation Reference
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/auth/register` | Register new user account |
+| `POST` | `/api/auth/login` | Authenticate & issue JWT Bearer token |
+| `GET` | `/api/auth/me` | Fetch authenticated user profile |
+| `POST` | `/api/documents/upload` | Upload PDF/DOCX and trigger RAG ingestion |
+| `GET` | `/api/documents` | List user documents |
+| `GET` | `/api/documents/{id}/pages` | Paginated text extraction for in-app viewer |
+| `POST` | `/api/chat` | Synchronous RAG question answering |
+| `POST` | `/api/chat/stream` | Real-time Server-Sent Events (SSE) streaming |
+| `POST` | `/api/search` | Global semantic vector search |
+| `POST` | `/api/summaries` | Generate structured revision summaries |
+| `POST` | `/api/quizzes/generate` | Generate grounded quiz assessment |
+| `POST` | `/api/quizzes/{id}/submit` | Grade assessment and diagnose weak topics |
+| `POST` | `/api/flashcards/generate` | Create spaced-repetition flashcards |
+| `GET` | `/api/analytics` | Study hours, mastery radar, and weekly charts |
+| `GET` | `/api/eval/benchmark` | Run empirical RAG evaluation harness |
+| `GET` | `/api/health` | Health & provider check |
+
+---
+
+## Testing & Quality Assurance
+
+Run the automated test suite:
 
 ```bash
-docker compose down
+cd backend
+pytest tests/ -v
 ```
+
+Tests cover:
+- Semantic chunking page preservation
+- Vector store similarity search & score thresholding
+- Anti-hallucination out-of-domain refusal
+- JWT authentication flow
+- End-to-end RAG grounded generation
 
 ---
 
-# 🧠 How RAG Works
+## License
 
-Suppose a student uploads:
-
-```text
-Operating_Systems.pdf
-```
-
-The document is processed into chunks:
-
-```text
-Chunk 1 → Introduction to OS
-Chunk 2 → Process Management
-Chunk 3 → CPU Scheduling
-Chunk 4 → Deadlocks
-...
-```
-
-Each chunk is converted into an embedding:
-
-```text
-Text Chunk
-    ↓
-Embedding Model
-    ↓
-Vector
-```
-
-The vectors are stored in the vector database.
-
-When the student asks:
-
-> "What are the four necessary conditions for deadlock?"
-
-The question is embedded and compared with the stored document vectors.
-
-The system retrieves the most relevant chunks:
-
-```text
-Operating_Systems.pdf
-Page 41
-Page 42
-```
-
-These chunks are provided to the LLM as context.
-
-The LLM then generates the answer using the retrieved information.
-
----
-
-# 🛡️ Hallucination Control
-
-EduRAG is designed to reduce unsupported AI responses.
-
-The generation layer follows the principle:
-
-```text
-Relevant Evidence Found?
-        │
-       YES
-        ↓
-Generate Grounded Answer
-        │
-        ↓
-Attach Source Citation
-```
-
-If sufficient information is unavailable:
-
-```text
-Relevant Evidence Found?
-        │
-        NO
-        ↓
-Inform User That The
-Answer Was Not Found
-```
-
-The system should **never fabricate document citations or page numbers**.
-
----
-
-# 🎯 Use Cases
-
-### Students
-
-* Understand difficult concepts
-* Search textbooks quickly
-* Generate revision notes
-* Prepare for examinations
-* Generate practice quizzes
-* Create flashcards
-
-### Teachers
-
-* Generate questions
-* Summarize course material
-* Create revision resources
-* Search large academic documents
-
-### Researchers
-
-* Search research papers
-* Retrieve relevant sections
-* Compare information across documents
-* Quickly understand lengthy papers
-
-### Educational Institutions
-
-* Create internal knowledge assistants
-* Build course-specific AI tutors
-* Provide document-grounded learning systems
-
----
-
-# 🔮 Future Enhancements
-
-* [ ] Multimodal RAG
-* [ ] Image and diagram understanding
-* [ ] Table-aware retrieval
-* [ ] OCR for scanned documents
-* [ ] Voice-based AI Tutor
-* [ ] Tamil and multilingual support
-* [ ] Personalized learning paths
-* [ ] Spaced repetition
-* [ ] Advanced RAG evaluation
-* [ ] Hybrid keyword + vector retrieval
-* [ ] Cross-document reasoning
-* [ ] Teacher dashboard
-* [ ] LMS integration
-* [ ] Mobile application
-
----
-
-# 📈 RAG Evaluation
-
-The system can be evaluated using:
-
-| Metric              | Purpose                                             |
-| ------------------- | --------------------------------------------------- |
-| Retrieval Precision | Measures relevance of retrieved chunks              |
-| Retrieval Recall    | Measures whether relevant information was retrieved |
-| Context Relevance   | Measures usefulness of retrieved context            |
-| Faithfulness        | Measures whether answers are supported by context   |
-| Citation Accuracy   | Measures source correctness                         |
-| Latency             | Measures response speed                             |
-
-A dedicated evaluation dataset can be used to compare different:
-
-* Chunk sizes
-* Embedding models
-* Top-K values
-* Retrieval strategies
-* LLMs
-
----
-
-# 🔒 Security
-
-EduRAG follows basic security principles:
-
-* JWT authentication
-* Password hashing
-* User-level document isolation
-* File validation
-* File size restrictions
-* Environment-based secrets
-* API authentication
-* Input validation
-* CORS configuration
-* Secure database access
-
-Sensitive credentials should never be committed to the repository.
-
----
-
-# 🧪 Testing
-
-Run backend tests:
-
-```bash
-pytest
-```
-
-Frontend tests:
-
-```bash
-npm test
-```
-
-Test important components including:
-
-* Document extraction
-* Chunking
-* Embedding generation
-* Retrieval
-* Citation mapping
-* API endpoints
-* Authentication
-* RAG generation
-
----
-
-# 🤝 Contributing
-
-Contributions are welcome.
-
-```bash
-git checkout -b feature/your-feature
-```
-
-Make your changes and commit:
-
-```bash
-git add .
-git commit -m "feat: add your feature"
-```
-
-Push:
-
-```bash
-git push origin feature/your-feature
-```
-
-Then open a Pull Request.
-
----
-
-# 📜 License
-
-This project is licensed under the **MIT License**.
-
----
-
-# 👨‍💻 Author
-
-**VIGNESHWARAN S P**
-
-Computer Science Engineering
-AI / ML • Full Stack Development • RAG Systems
-
-GitHub: `@vigneshwaransp`
-
----
-
-# ⭐ Support
-
-If you find this project useful, consider giving the repository a ⭐ on GitHub.
-
----
-
-## 💡 Vision
-
-EduRAG aims to move educational AI from:
-
-> **"Ask an AI anything."**
-
-to:
-
-> **"Ask an AI about what you're actually studying."**
-
-**Your documents. Your knowledge. Your AI tutor.**
+MIT License © 2025 EduRAG Project.
