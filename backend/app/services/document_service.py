@@ -1,5 +1,6 @@
 import os
 import uuid
+import json
 import asyncio
 from typing import List, Optional
 from sqlalchemy import select, delete
@@ -67,6 +68,7 @@ class DocumentService:
             logger.info(f"[{doc.title}] Stage 1: Extracting text from {doc.file_path}")
             pages = DocumentExtractor.extract(doc.file_path, doc.file_type)
             doc.page_count = len(pages)
+            doc.full_text = "\n\n".join([p.text for p in pages])
             await asyncio.sleep(0.1)
 
             # Stage 2: Chunking
@@ -97,6 +99,7 @@ class DocumentService:
             for c, emb in zip(chunks, embeddings):
                 chunk_id = str(uuid.uuid4())
                 chunk_ids.append(chunk_id)
+                emb_list = emb.tolist() if hasattr(emb, "tolist") else emb
 
                 db_chunk = DocumentChunk(
                     id=chunk_id,
@@ -105,6 +108,7 @@ class DocumentService:
                     page_number=c.page_number,
                     section_title=c.section_title,
                     text_content=c.text_content,
+                    embedding_json=json.dumps(emb_list),
                     token_count=c.token_count
                 )
                 db_chunks.append(db_chunk)
@@ -139,6 +143,75 @@ class DocumentService:
             doc.status = "failed"
             doc.error_message = f"Processing error: {str(e)}"
             await db.commit()
+
+    async def rehydrate_vector_store(self, db: AsyncSession):
+        """Scans all ready documents from database and hydrates active vector store upon server startup."""
+        try:
+            logger.info("Checking persistent database to rehydrate vector store...")
+            result = await db.execute(select(Document).where(Document.status == "ready"))
+            docs = list(result.scalars().all())
+            if not docs:
+                logger.info("No ready documents in database to rehydrate.")
+                return
+
+            total_chunks = 0
+            for doc in docs:
+                chunk_res = await db.execute(
+                    select(DocumentChunk)
+                    .where(DocumentChunk.document_id == doc.id)
+                    .order_by(DocumentChunk.chunk_index.asc())
+                )
+                db_chunks = list(chunk_res.scalars().all())
+                if not db_chunks:
+                    continue
+
+                chunk_ids = []
+                embeddings = []
+                documents_texts = []
+                metadatas = []
+                need_embed = []
+                need_embed_indices = []
+
+                for idx, c in enumerate(db_chunks):
+                    chunk_ids.append(c.id)
+                    documents_texts.append(c.text_content)
+                    metadatas.append({
+                        "document_id": doc.id,
+                        "document_title": doc.title,
+                        "page_number": c.page_number,
+                        "section_title": c.section_title,
+                        "chunk_index": c.chunk_index
+                    })
+                    if c.embedding_json:
+                        try:
+                            embeddings.append(json.loads(c.embedding_json))
+                        except Exception:
+                            need_embed.append(c.text_content)
+                            need_embed_indices.append(idx)
+                            embeddings.append([])
+                    else:
+                        need_embed.append(c.text_content)
+                        need_embed_indices.append(idx)
+                        embeddings.append([])
+
+                if need_embed:
+                    fresh_embeddings = embedding_service.embed_documents(need_embed)
+                    for emb_idx, fresh_emb in zip(need_embed_indices, fresh_embeddings):
+                        embeddings[emb_idx] = fresh_emb
+                        db_chunks[emb_idx].embedding_json = json.dumps(fresh_emb)
+                    await db.commit()
+
+                vector_store.add_chunks(
+                    chunk_ids=chunk_ids,
+                    embeddings=embeddings,
+                    documents=documents_texts,
+                    metadatas=metadatas
+                )
+                total_chunks += len(chunk_ids)
+
+            logger.info(f"Vector store rehydration complete! Successfully loaded {total_chunks} chunks across {len(docs)} documents.")
+        except Exception as e:
+            logger.error(f"Failed to rehydrate vector store: {e}", exc_info=True)
 
     async def get_user_documents(self, user_id: str, db: AsyncSession) -> List[Document]:
         result = await db.execute(

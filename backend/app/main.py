@@ -1,4 +1,6 @@
 import os
+import asyncio
+import httpx
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +11,7 @@ from app.core.config import settings
 from app.core.logging import setup_logging, logger
 from app.database.session import init_db, AsyncSessionLocal
 from app.database.seeder import seed_initial_data
+from app.services.document_service import document_service
 
 from app.api.auth import router as auth_router
 from app.api.documents import router as documents_router
@@ -23,16 +26,40 @@ from app.api.health import router as health_router
 
 setup_logging()
 
+async def keep_alive_worker():
+    """Self-ping loop every 10 minutes to prevent Render free-tier idle spin down."""
+    logger.info("Initializing EduRAG keep-alive background worker...")
+    await asyncio.sleep(45)  # Allow server boot to settle
+    ping_url = "https://edurag-api.onrender.com/api/health" if settings.APP_ENV == "production" else f"http://127.0.0.1:{settings.PORT}/api/health"
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        while True:
+            try:
+                await asyncio.sleep(600)  # Ping every 10 minutes
+                resp = await client.get(ping_url)
+                logger.info(f"Keep-alive heartbeat sent to {ping_url} (HTTP {resp.status_code})")
+            except asyncio.CancelledError:
+                break
+            except Exception as err:
+                logger.warning(f"Keep-alive heartbeat notice: {err}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: initialize database and seed sample documents
+    # Startup: initialize database, seed sample documents, and rehydrate vector index
     logger.info("Starting up EduRAG Intelligence System...")
     await init_db()
     async with AsyncSessionLocal() as db:
         await seed_initial_data(db)
+        await document_service.rehydrate_vector_store(db)
     logger.info("EduRAG is ready to serve queries.")
-    yield
-    logger.info("Shutting down EduRAG Intelligence System.")
+
+    # Start 24/7 keep-alive background task
+    keep_alive_job = asyncio.create_task(keep_alive_worker())
+    try:
+        yield
+    finally:
+        keep_alive_job.cancel()
+        logger.info("Shutting down EduRAG Intelligence System.")
 
 app = FastAPI(
     title="EduRAG — Education Document Intelligence API",

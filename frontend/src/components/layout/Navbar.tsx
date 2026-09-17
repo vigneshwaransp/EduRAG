@@ -18,9 +18,10 @@ import { api } from '../../services/api';
 interface NavbarProps {
   onOpenSearch: () => void;
   onOpenAuthModal: () => void;
+  serverStatus?: 'checking' | 'connected' | 'waking' | 'offline';
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenAuthModal }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenAuthModal, serverStatus = 'checking' }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { inspectorOpen, setInspectorOpen, refreshDocuments } = useDocuments();
@@ -78,6 +79,35 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSearch, onOpenAuthModal })
 
       {/* Actions */}
       <div className="flex items-center space-x-2 sm:space-x-3">
+        {/* Server Status Badge */}
+        {serverStatus === 'connected' && (
+          <div
+            title="EduRAG Cloud Backend is active and connected"
+            className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 border border-neutral-300 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-[11px] font-mono text-neutral-600 dark:text-neutral-400"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-bold text-emerald-600 dark:text-emerald-400">ONLINE</span>
+          </div>
+        )}
+        {serverStatus === 'waking' && (
+          <div
+            title="Render free tier spins down after 15m idle. Initial wake-up takes ~30s."
+            className="flex items-center space-x-1.5 px-2.5 py-1 border border-amber-500/40 bg-amber-500/10 text-[11px] font-mono text-amber-600 dark:text-amber-400 animate-pulse"
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span className="font-bold">WAKING...</span>
+          </div>
+        )}
+        {serverStatus === 'offline' && (
+          <div
+            title="Cloud API server currently unreachable"
+            className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 border border-red-500/30 bg-red-500/10 text-[11px] font-mono text-red-600 dark:text-red-400"
+          >
+            <span className="w-2 h-2 rounded-full bg-red-500" />
+            <span className="font-bold">OFFLINE</span>
+          </div>
+        )}
+
         {isAuthenticated && (
           <button
             onClick={handleSeedSamples}

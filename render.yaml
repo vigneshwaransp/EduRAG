@@ -28,7 +28,9 @@ services:
       - key: LLM_BASE_URL
         value: "https://api.mistral.ai/v1"
       - key: DATABASE_URL
-        value: "sqlite+aiosqlite:///./edurag.db"
+        fromDatabase:
+          name: edurag-db
+          property: connectionString
       - key: CORS_ORIGINS
         value: "*"
 
@@ -48,3 +50,12 @@ services:
     envVars:
       - key: VITE_API_BASE_URL
         value: "https://edurag-api.onrender.com"
+
+databases:
+  # ---------------------------------------------------------------------------
+  # EduRAG Permanent PostgreSQL Database (Survives Restarts & Redeploys)
+  # ---------------------------------------------------------------------------
+  - name: edurag-db
+    databaseName: edurag
+    user: edurag_user
+    plan: free
